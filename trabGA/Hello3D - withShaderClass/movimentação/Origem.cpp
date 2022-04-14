@@ -26,12 +26,14 @@ using namespace std;
 #include <glm/gtc/type_ptr.hpp>
 
 #include "Shader.h"
+#include "objloader.h"
 
 
 // Protótipo da função de callback de teclado
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+
 // Protótipos das funções
 int setupGeometry();
 
@@ -39,9 +41,7 @@ int setupGeometry();
 const GLuint WIDTH = 800, HEIGHT = 600;
 
 
-bool view1 = false, view2 = false, view3 = false, view4 = false, view5 = false, firstMouse = true;
-
-bool loadOBJ(const char* path, std::vector < glm::vec3 >& out_vertices, std::vector < glm::vec2 >& out_uvs, std::vector < glm::vec3 >& out_normals);
+bool view1 = false, view2 = false, view3 = false, view4 = false, view5 = false, firstMouse = true, rotatex = false, rotatey = false, rotatez = false, modelx = false, modely = false, modelz = false;
 
 glm::vec3 cameraPos;
 glm::vec3 cameraFront;
@@ -106,106 +106,18 @@ int main()
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
 
-	std::vector< unsigned int > vertexIndices, uvIndices, normalIndices;
-	std::vector< glm::vec3 > temp_vertices;
-	std::vector< glm::vec2 > temp_uvs;
-	std::vector< glm::vec3 > temp_normals;
-
-	std::vector< glm::vec3 > out_vertices;
-	std::vector< glm::vec2 > out_uvs;
-	std::vector< glm::vec3 > out_normals;
-
-bool loadOBJ(const char* path, std::vector < glm::vec3 >&out_vertices, std::vector < glm::vec2 >&out_uvs, std::vector < glm::vec3 >&out_normals);
-{
-	FILE* file;
-
-	file = fopen("pikachu.obj", "r");
-	if (file == NULL) {
-		printf("Impossible to open the file !\n");
-		return false;
-	}
-
-	while (1) {
-
-		char lineHeader[128];
-		// read the first word of the line
-		int res = fscanf_s(file, "%s", lineHeader);
-		if (res == EOF)
-			break; // EOF = End Of File. Quit the loop.
-
-		// else : parse lineHeader
-		if (strcmp(lineHeader, "v") == 0) {
-			glm::vec3 vertex;
-			fscanf_s(file, "%f %f %f\n", &vertex.x, &vertex.y, &vertex.z);
-			temp_vertices.push_back(vertex);
-		}
-
-		else if (strcmp(lineHeader, "vt") == 0) {
-			glm::vec2 uv;
-			fscanf_s(file, "%f %f\n", &uv.x, &uv.y);
-			temp_uvs.push_back(uv);
-		}
-
-		else if (strcmp(lineHeader, "vn") == 0) {
-			glm::vec3 normal;
-			fscanf_s(file, "%f %f %f\n", &normal.x, &normal.y, &normal.z);
-			temp_normals.push_back(normal);
-		}
-
-		else if (strcmp(lineHeader, "f") == 0) {
-			std::string vertex1, vertex2, vertex3;
-			unsigned int vertexIndex[3], uvIndex[3], normalIndex[3];
-			int matches = fscanf_s(file, "%d/%d/%d %d/%d/%d %d/%d/%d\n", &vertexIndex[0], &uvIndex[0], &normalIndex[0], &vertexIndex[1], &uvIndex[1], &normalIndex[1], &vertexIndex[2], &uvIndex[2], &normalIndex[2]);
-			if (matches != 9) {
-				printf("File can't be read by our simple parser : ( Try exporting with other options\n");
-				return false;
-			}
-
-			vertexIndices.push_back(vertexIndex[0]);
-			vertexIndices.push_back(vertexIndex[1]);
-			vertexIndices.push_back(vertexIndex[2]);
-			uvIndices.push_back(uvIndex[0]);
-			uvIndices.push_back(uvIndex[1]);
-			uvIndices.push_back(uvIndex[2]);
-			normalIndices.push_back(normalIndex[0]);
-			normalIndices.push_back(normalIndex[1]);
-			normalIndices.push_back(normalIndex[2]);
-		}
-	}
-
-	for (unsigned int i = 0; i < vertexIndices.size(); i++) {
-		unsigned int vertexIndex = vertexIndices[i];
-		glm::vec3 vertex = temp_vertices[vertexIndex - 1];
-		out_vertices.push_back(vertex);
-	}
-
-	for (unsigned int i = 0; i < uvIndices.size(); i++) {
-		unsigned int uvIndex = uvIndices[i];
-		glm::vec3 uv = temp_vertices[uvIndex - 1];
-		out_uvs.push_back(uv);
-	}
-
-	for (unsigned int i = 0; i < normalIndices.size(); i++) {
-		unsigned int normalIndex = normalIndices[i];
-		glm::vec3 normal = temp_vertices[normalIndex - 1];
-		out_normals.push_back(normal);
-	}
-
-	std::vector< glm::vec3 > vertices;
-	std::vector< glm::vec2 > uvs;
-	std::vector< glm::vec3 > normals; // Won't be used at the moment.
-
-	bool res = loadOBJ("pikachu.obj", vertices, uvs, normals);
-
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
-}
-
 	// Compilando e buildando o programa de shader
 	Shader shader = Shader("../shaders/hello.vs", "../shaders/hello.fs");
 
 	// Gerando um buffer simples, com a geometria de um triângulo
 	GLuint VAO = setupGeometry();
 
+	// Read our .obj file
+	std::vector< glm::vec3 > vertices;
+	std::vector< glm::vec2 > uvs;
+	std::vector< glm::vec3 > normals; // Won't be used at the moment.
+	bool res = loadOBJ("pikachu.obj", vertices, uvs, normals);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
 
 	glUseProgram(shader.ID);
 
@@ -254,10 +166,44 @@ bool loadOBJ(const char* path, std::vector < glm::vec3 >&out_vertices, std::vect
 
 		projection = glm::perspective(glm::radians(fov), (GLfloat)WIDTH / (GLfloat)HEIGHT, 0.1f, 100.0f);
 
+		if (view1)
+		{
+			view = glm::lookAt(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		}
+		else if (view2)
+		{
+			view = glm::lookAt(glm::vec3(0.0f, 0.0f, -3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		}
+		else if (view3)
+		{
+			view = glm::lookAt(glm::vec3(3.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		}
+		else if (view4)
+		{
+			view = glm::lookAt(glm::vec3(-3.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		}
+		else if (view5)
+		{
+			view = glm::lookAt(glm::vec3(0.0f, 3.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		}
+		if (rotatex)
+		{
+			model = glm::rotate(model, currentFrame*glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		}
+		else if (rotatey)
+		{
+			model = glm::rotate(model, currentFrame*glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		}
+		else if (rotatez)
+		{
+			model = glm::rotate(model, currentFrame*glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		}
+
 		glUniformMatrix4fv(modelLoc, 1, FALSE, glm::value_ptr(model));
 		glUniformMatrix4fv(viewLoc, 1, FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(projectionLoc, 1, FALSE, glm::value_ptr(projection));
 
+		
 
 		// Chamada de desenho - drawcall
 		// Poligono Preenchido - GL_TRIANGLES
@@ -306,6 +252,65 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	{
 		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
 	}
+	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
+	{
+		modelx = true;
+		modely = false;
+		modelz = false;
+	}
+	if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
+	{
+		modelx = false;
+		modely = true;
+		modelz = false;
+	}
+	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
+	{
+		modelx = false;
+		modely = false;
+		modelz = true;
+	}
+	if (key == GLFW_KEY_1 && action == GLFW_PRESS)
+	{
+		view1 = true;
+		view2 = false;
+		view3 = false;
+		view4 = false;
+		view5 = false;
+	}
+	if (key == GLFW_KEY_2 && action == GLFW_PRESS)
+	{
+		view1 = false;
+		view2 = true;
+		view3 = false;
+		view4 = false;
+		view5 = false;
+	}
+	if (key == GLFW_KEY_3 && action == GLFW_PRESS)
+	{
+		view1 = false;
+		view2 = false;
+		view3 = true;
+		view4 = false;
+		view5 = false;
+	}
+	if (key == GLFW_KEY_4 && action == GLFW_PRESS)
+	{
+		view1 = false;
+		view2 = false;
+		view3 = false;
+		view4 = true;
+		view5 = false;
+	}
+	if (key == GLFW_KEY_5 && action == GLFW_PRESS)
+	{
+		view1 = false;
+		view2 = false;
+		view3 = false;
+		view4 = false;
+		view5 = true;
+	}
+
 }
 
 
