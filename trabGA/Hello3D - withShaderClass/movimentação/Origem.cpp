@@ -10,6 +10,8 @@
 #include <iostream>
 #include <string>
 #include <assert.h>
+#include <fstream>
+#include <sstream>
 #include <vector>
 
 using namespace std;
@@ -42,6 +44,10 @@ const GLuint WIDTH = 800, HEIGHT = 600;
 
 
 bool view1 = false, view2 = false, view3 = false, view4 = false, view5 = false, firstMouse = true, rotatex = false, rotatey = false, rotatez = false, modelx = false, modely = false, modelz = false;
+float x = 0.0;
+float y = 0.0;
+float z = 0.0;
+float t = 0.0;
 
 glm::vec3 cameraPos;
 glm::vec3 cameraFront;
@@ -110,14 +116,8 @@ int main()
 	Shader shader = Shader("../shaders/hello.vs", "../shaders/hello.fs");
 
 	// Gerando um buffer simples, com a geometria de um triângulo
-	GLuint VAO = setupGeometry();
-
 	// Read our .obj file
-	std::vector< glm::vec3 > vertices;
-	std::vector< glm::vec2 > uvs;
-	std::vector< glm::vec3 > normals; // Won't be used at the moment.
-	bool res = loadOBJ("pikachu.obj", vertices, uvs, normals);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
+	GLuint VAO = setupMesh("../Pikachu.obj");
 
 	glUseProgram(shader.ID);
 
@@ -164,6 +164,10 @@ int main()
 		glm::mat4 view = glm::mat4(1); //matriz identidade;
 		view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 
+		model = glm::scale(model, glm::vec3(0.3 + t, 0.3 + t, 0.3 + t));
+		model = glm::translate(model, glm::vec3(0.0 + x, -2.0 + y, 0.0 + z));
+		glUniformMatrix4fv(modelLoc, 1, FALSE, glm::value_ptr(model));
+
 		projection = glm::perspective(glm::radians(fov), (GLfloat)WIDTH / (GLfloat)HEIGHT, 0.1f, 100.0f);
 
 		if (view1)
@@ -186,17 +190,19 @@ int main()
 		{
 			view = glm::lookAt(glm::vec3(0.0f, 3.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		}
+
+
 		if (rotatex)
 		{
-			model = glm::rotate(model, currentFrame*glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+			model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(1.0f, 0.0f, 0.0f));
 		}
 		else if (rotatey)
 		{
-			model = glm::rotate(model, currentFrame*glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
 		}
 		else if (rotatez)
 		{
-			model = glm::rotate(model, currentFrame*glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+			model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
 		}
 
 		glUniformMatrix4fv(modelLoc, 1, FALSE, glm::value_ptr(model));
@@ -209,13 +215,10 @@ int main()
 		// Poligono Preenchido - GL_TRIANGLES
 
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, 42);
+		glDrawArrays(GL_TRIANGLES, 0, getMeshSize());
 
 		// Chamada de desenho - drawcall
 		// CONTORNO - GL_LINE_LOOP
-
-		glDrawArrays(GL_POINTS, 0, 42);
-		glBindVertexArray(0);
 
 		// Troca os buffers da tela
 		glfwSwapBuffers(window);
@@ -252,24 +255,28 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	{
 		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
 	}
+
+
 	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
 	{
-		modelx = true;
-		modely = false;
-		modelz = false;
+		rotatex = true;
+		rotatey = false;
+		rotatez = false;
 	}
 	if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
 	{
-		modelx = false;
-		modely = true;
-		modelz = false;
+		rotatex = false;
+		rotatey = true;
+		rotatez = false;
 	}
 	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
 	{
-		modelx = false;
-		modely = false;
-		modelz = true;
+		rotatex = false;
+		rotatey = false;
+		rotatez = true;
 	}
+
+
 	if (key == GLFW_KEY_1 && action == GLFW_PRESS)
 	{
 		view1 = true;
@@ -311,6 +318,40 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		view5 = true;
 	}
 
+
+	if (key == GLFW_KEY_I && action == GLFW_PRESS) 
+	{
+		y = y + 1.0;
+	}
+	if (key == GLFW_KEY_K && action == GLFW_PRESS)
+	{
+		y = y - 1.0;
+	}
+	if (key == GLFW_KEY_J && action == GLFW_PRESS)
+	{
+		x = x - 1.0;
+	}
+	if (key == GLFW_KEY_L && action == GLFW_PRESS)
+	{
+		x = x + 1.0;
+	}
+	if (key == GLFW_KEY_O && action == GLFW_PRESS)
+	{
+		z = z + 1.0;
+	}
+	if (key == GLFW_KEY_U && action == GLFW_PRESS)
+	{
+		z = z - 1.0;
+	}
+
+	if (key == GLFW_KEY_C && action == GLFW_PRESS)
+	{
+		t = t - 0.1;
+	}
+	if (key == GLFW_KEY_V && action == GLFW_PRESS)
+	{
+		t = t + 0.1;
+	}
 }
 
 
