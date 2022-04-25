@@ -217,6 +217,11 @@ int main()
 		glBindVertexArray(VAO);
 		glDrawArrays(GL_TRIANGLES, 0, getMeshSize());
 
+		model = glm::translate(model, glm::vec3(3.5, 0.0, 0.0));
+		glUniformMatrix4fv(modelLoc, 1, FALSE, glm::value_ptr(model));
+		glDrawArrays(GL_TRIANGLES, 0, getMeshSize());
+		
+
 		// Chamada de desenho - drawcall
 		// CONTORNO - GL_LINE_LOOP
 
