@@ -1,6 +1,6 @@
 # trab-GA-2022-1
  
-Trabalho feito por: Thomas Sponchiado Pastore e Bernardo Ternus de Abreu
+Trabalho feito por: Thomas Sponchiado Pastore (https://github.com/thom01s?tab=repositories) e Bernardo Ternus de Abreu (https://github.com/beternus)
 
 - ao abrir o programa deve-se usar a configuração x86 para não gerar erros
 - as teclas WASD servem para movimentação em 1° pessoa e o mouse movimenta a câmera
