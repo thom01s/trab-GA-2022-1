@@ -49,6 +49,9 @@ float y = 0.0;
 float z = 0.0;
 float t = 0.0;
 
+float f = 0.0;
+int seletor = 0;
+
 glm::vec3 cameraPos;
 glm::vec3 cameraFront;
 glm::vec3 cameraUp;
@@ -62,6 +65,12 @@ float fov = 45.0f;
 
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
+
+glm::vec3 objpos[] = {
+	glm::vec3(0.0, 0.0, 0.0),
+	glm::vec3(3.5, 0.0, 0.0),
+	glm::vec3(3.5, 0.0, 0.0)
+};
 
 // Função MAIN
 int main()
@@ -140,6 +149,11 @@ int main()
 
 	glUniformMatrix4fv(modelLoc, 1, FALSE, glm::value_ptr(model));
 
+	float channelID = 0.0;
+	GLint channelLoc = glGetUniformLocation(shader.ID, "channelID");
+	glUniform1f(channelLoc, channelID);
+
+
 	float currentFrame = glfwGetTime();
 	deltaTime = currentFrame - lastFrame;
 	lastFrame = currentFrame;
@@ -213,13 +227,26 @@ int main()
 
 		// Chamada de desenho - drawcall
 		// Poligono Preenchido - GL_TRIANGLES
-
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, getMeshSize());
 
-		model = glm::translate(model, glm::vec3(3.5, 0.0, 0.0));
-		glUniformMatrix4fv(modelLoc, 1, FALSE, glm::value_ptr(model));
-		glDrawArrays(GL_TRIANGLES, 0, getMeshSize());
+		
+
+		for (int i = 0; i <= 2; i++)
+		{
+			if (seletor == i) {
+				channelID = 1.0;
+				glUniform1f(channelLoc, channelID);
+			}
+			else {
+				channelID = 0.0;
+				glUniform1f(channelLoc, channelID);
+			}
+			model = glm::translate(model, objpos[i]);
+			glUniformMatrix4fv(modelLoc, 1, FALSE, glm::value_ptr(model));
+			
+			glDrawArrays(GL_TRIANGLES, 0, getMeshSize());
+		}
+
 		
 
 		// Chamada de desenho - drawcall
@@ -356,6 +383,14 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	if (key == GLFW_KEY_V && action == GLFW_PRESS)
 	{
 		t = t + 0.1;
+	}
+
+	if (key == GLFW_KEY_F && action == GLFW_PRESS)
+	{
+		seletor++;
+		if (seletor > 2) {
+			seletor = 0;
+		}
 	}
 }
 
